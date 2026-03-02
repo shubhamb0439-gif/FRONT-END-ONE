@@ -1897,9 +1897,6 @@ if (typeof window !== 'undefined') {
 
                 console.log('[XR VISION] Auto-connecting on login...');
                 elBtnConnect.click();
-
-                // Initialize UI state
-                updateConnectionStatusUI(false);
             } catch (e) {
                 console.warn('[AUTO-XR][DEVICE] Auto-connect skipped:', e);
             }
