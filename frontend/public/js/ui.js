@@ -1379,6 +1379,11 @@ function setupSR() {
         if (interim && recordingActive) {
             elChip.textContent = `Listening: ${interim}`;
             elChip.hidden = false;
+            // Show in new UI
+            if (elTranscriptText && elTranscriptDisplay) {
+                elTranscriptText.textContent = interim;
+                elTranscriptDisplay.hidden = false;
+            }
         }
 
         if (finalTxt) {
@@ -1386,6 +1391,17 @@ function setupSR() {
             lastRecognizedCommand = finalLower;
             elChip.textContent = `Heard: ${finalTxt}`;
             elChip.hidden = false;
+
+            // Show in new UI
+            if (elTranscriptText && elTranscriptDisplay) {
+                elTranscriptText.textContent = finalTxt;
+                elTranscriptDisplay.hidden = false;
+                setTimeout(() => {
+                    if (!recordingActive) {
+                        elTranscriptDisplay.hidden = true;
+                    }
+                }, 3000);
+            }
 
             if (/\bcreate\b/.test(finalLower)) {
                 onStopRecordingNote();
@@ -1662,6 +1678,142 @@ try {
 setStatus(false);
 msg('System', "Disconnected. Tap 'Connect' or say 'connect' to join the server.");
 
+// ========== XR VISION INTERFACE ENHANCEMENTS ==========
+
+// New UI Elements
+const elConnectionStatus = document.getElementById('connectionStatus');
+const elStatusTextSpan = document.getElementById('statusText');
+const elSphere = document.querySelector('.sphere');
+const elHoldToSpeak = document.getElementById('btnHoldToSpeak');
+const elTranscriptDisplay = document.getElementById('transcriptDisplay');
+const elTranscriptText = document.getElementById('transcriptText');
+
+// Hold-to-speak state
+let isHoldingSpeakButton = false;
+let holdToSpeakActive = false;
+
+// Update connection status UI
+function updateConnectionStatusUI(connected) {
+    if (elConnectionStatus) {
+        if (connected) {
+            elConnectionStatus.classList.add('connected');
+        } else {
+            elConnectionStatus.classList.remove('connected');
+        }
+    }
+    if (elStatusTextSpan) {
+        elStatusTextSpan.textContent = connected ? 'Connected' : 'Disconnected';
+    }
+}
+
+// Initialize hold-to-speak button
+if (elHoldToSpeak) {
+    // Mouse events
+    elHoldToSpeak.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        startHoldToSpeak();
+    });
+
+    elHoldToSpeak.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        stopHoldToSpeak();
+    });
+
+    elHoldToSpeak.addEventListener('mouseleave', (e) => {
+        if (isHoldingSpeakButton) {
+            stopHoldToSpeak();
+        }
+    });
+
+    // Touch events for mobile
+    elHoldToSpeak.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startHoldToSpeak();
+    });
+
+    elHoldToSpeak.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        stopHoldToSpeak();
+    });
+
+    elHoldToSpeak.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        if (isHoldingSpeakButton) {
+            stopHoldToSpeak();
+        }
+    });
+}
+
+function startHoldToSpeak() {
+    if (isHoldingSpeakButton || !isServerConnected) return;
+
+    isHoldingSpeakButton = true;
+    holdToSpeakActive = true;
+
+    // Visual feedback
+    if (elHoldToSpeak) {
+        elHoldToSpeak.classList.add('speaking');
+    }
+    if (elSphere) {
+        elSphere.style.animation = 'float 6s ease-in-out infinite, pulse-speaking 0.8s ease-in-out infinite';
+    }
+
+    // Start recording
+    onStartRecordingNote();
+
+    // Auto-start stream if not active
+    if (!streamActive && connectedDesktops.length > 0) {
+        elBtnStream.click();
+    }
+
+    console.log('[HOLD-TO-SPEAK] Started');
+}
+
+function stopHoldToSpeak() {
+    if (!isHoldingSpeakButton) return;
+
+    isHoldingSpeakButton = false;
+    holdToSpeakActive = false;
+
+    // Visual feedback
+    if (elHoldToSpeak) {
+        elHoldToSpeak.classList.remove('speaking');
+    }
+    if (elSphere) {
+        elSphere.style.animation = 'float 6s ease-in-out infinite';
+    }
+
+    // Stop recording
+    onStopRecordingNote();
+
+    console.log('[HOLD-TO-SPEAK] Stopped');
+}
+
+// Override transcript display for new UI
+const originalOnTranscript = window.onTranscript;
+window.onTranscript = function(text, isFinal) {
+    if (elTranscriptText && elTranscriptDisplay) {
+        elTranscriptText.textContent = text;
+        if (text && holdToSpeakActive) {
+            elTranscriptDisplay.hidden = false;
+        } else if (isFinal) {
+            setTimeout(() => {
+                elTranscriptDisplay.hidden = true;
+            }, 2000);
+        }
+    }
+    if (originalOnTranscript) {
+        originalOnTranscript(text, isFinal);
+    }
+};
+
+// Override setStatus to update new UI
+const originalSetStatus = setStatus;
+setStatus = function(connected) {
+    originalSetStatus(connected);
+    updateConnectionStatusUI(connected);
+};
+
 // Load XR Device permissions once and apply read-only UI if needed
 if (typeof window !== 'undefined') {
     loadDevicePermissionsOnce()
@@ -1687,7 +1839,7 @@ if (typeof window !== 'undefined') {
             } catch { }
 
             // =========================
-            // AUTO CONNECT (cold open)
+            // AUTO CONNECT (cold open) - ENHANCED FOR XR VISION
             // =========================
             try {
                 if (xrDevicePermissions && !xrDevicePermissions.write) {
@@ -1710,8 +1862,11 @@ if (typeof window !== 'undefined') {
 
                 if (!(elDeviceXrIdInput?.value || '').trim()) return;
 
-                console.log('[AUTO-XR][DEVICE] Auto-clicking Connect (reuses existing logic).');
+                console.log('[XR VISION] Auto-connecting on login...');
                 elBtnConnect.click();
+
+                // Initialize UI state
+                updateConnectionStatusUI(false);
             } catch (e) {
                 console.warn('[AUTO-XR][DEVICE] Auto-connect skipped:', e);
             }
