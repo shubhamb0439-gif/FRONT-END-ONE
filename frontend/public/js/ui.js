@@ -1674,9 +1674,6 @@ try {
 } finally {
     _rehydrating = false;
 }
-// reflect UI state
-setStatus(false);
-msg('System', "Disconnected. Tap 'Connect' or say 'connect' to join the server.");
 
 // ========== XR VISION INTERFACE ENHANCEMENTS ==========
 
@@ -1705,6 +1702,18 @@ function updateConnectionStatusUI(connected) {
         elStatusTextSpan.textContent = connected ? 'Connected' : 'Disconnected';
     }
 }
+
+// Override setStatus EARLY to update new UI
+const originalSetStatus = setStatus;
+setStatus = function(connected) {
+    console.log('[XR VISION] setStatus called with:', connected);
+    originalSetStatus(connected);
+    updateConnectionStatusUI(connected);
+};
+
+// reflect initial UI state
+setStatus(false);
+msg('System', "Disconnected. Tap 'Connect' or say 'connect' to join the server.");
 
 // Initialize hold-to-speak button
 if (elHoldToSpeak) {
@@ -1838,13 +1847,6 @@ window.onTranscript = function(text, isFinal) {
     if (originalOnTranscript) {
         originalOnTranscript(text, isFinal);
     }
-};
-
-// Override setStatus to update new UI
-const originalSetStatus = setStatus;
-setStatus = function(connected) {
-    originalSetStatus(connected);
-    updateConnectionStatusUI(connected);
 };
 
 // Load XR Device permissions once and apply read-only UI if needed
