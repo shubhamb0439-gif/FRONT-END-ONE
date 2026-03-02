@@ -1744,7 +1744,7 @@ if (elHoldToSpeak) {
     });
 }
 
-function startHoldToSpeak() {
+async function startHoldToSpeak() {
     if (isHoldingSpeakButton || !isServerConnected) return;
 
     isHoldingSpeakButton = true;
@@ -1754,17 +1754,44 @@ function startHoldToSpeak() {
     if (elHoldToSpeak) {
         elHoldToSpeak.classList.add('speaking');
     }
+
+    const container = document.querySelector('.container');
+    if (container) {
+        container.classList.add('speaking-active');
+    }
+
     if (elSphere) {
         elSphere.style.animation = 'float 6s ease-in-out infinite, pulse-speaking 0.8s ease-in-out infinite';
     }
 
-    // Start recording
-    onStartRecordingNote();
-
     // Auto-start stream if not active
     if (!streamActive && connectedDesktops.length > 0) {
-        elBtnStream.click();
+        try {
+            await signaling?.waitUntilConnected?.();
+            streamActive = true;
+            await ensureStreamer().startStreaming(connectedDesktops);
+            micMuted = true;
+            ensureStreamer().mute();
+            setStatus(true);
+
+            const to = (pairedDesktopId || signaling?.currentDesktopId || DEFAULT_DESKTOP_ID);
+            persistedState.selectedDesktopId = to;
+            saveState();
+            streamer.sendOfferTo(to).catch(console.error);
+
+            if (window.__offerRetryTimer) clearTimeout(window.__offerRetryTimer);
+            window.__offerRetryTimer = setTimeout(() => {
+                if (streamActive && signaling?.isConnectedNow?.()) {
+                    streamer.sendOfferTo(to).catch(() => { });
+                }
+            }, 4000);
+        } catch (e) {
+            console.error('[HOLD-TO-SPEAK] Failed to start stream:', e);
+        }
     }
+
+    // Start recording
+    onStartRecordingNote();
 
     console.log('[HOLD-TO-SPEAK] Started');
 }
@@ -1779,6 +1806,12 @@ function stopHoldToSpeak() {
     if (elHoldToSpeak) {
         elHoldToSpeak.classList.remove('speaking');
     }
+
+    const container = document.querySelector('.container');
+    if (container) {
+        container.classList.remove('speaking-active');
+    }
+
     if (elSphere) {
         elSphere.style.animation = 'float 6s ease-in-out infinite';
     }
