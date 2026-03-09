@@ -4,99 +4,138 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>XR Tech Dashboard</title>
+    <title>XR Hub Dashboard - Command Center</title>
 
-    <!-- App favicon -->
     <link rel="icon" type="image/png" sizes="512x512" href="/public/images/xr-logo.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/public/images/xr-logo.png">
 
-
-
-    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { panel: '#4B4F57', good: '#26C85A', bad: '#EA4335', ink: '#2F3238' }
-                }
-            }
-        };
-    </script>
+    <link rel="stylesheet" href="/public/css/3d-framework.css">
 
-    <!-- Chart.js + time adapter (put OUTSIDE the config script) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
     <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
         .chip {
             border-radius: 12px;
             color: #fff;
             font-weight: 600;
-            letter-spacing: .3px;
+            letter-spacing: 1px;
             padding: .70rem 1.1rem;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, .15)
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .3);
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.2), rgba(0, 102, 255, 0.2));
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 243, 255, 0.5);
         }
 
         .chip-good {
-            background: #26C85A
+            background: linear-gradient(135deg, #00ff9f 0%, #00ba88 100%);
+            box-shadow: 0 4px 15px rgba(0, 255, 159, 0.5);
         }
 
         .chip-bad {
-            background: #EA4335
+            background: linear-gradient(135deg, #ff006e 0%, #dc2626 100%);
+            box-shadow: 0 4px 15px rgba(255, 0, 110, 0.5);
         }
 
         .icon-btn {
-            width: 42px;
-            height: 42px;
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, .35);
-            background: rgba(255, 255, 255, .06)
+            border-radius: 12px;
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.1), rgba(0, 243, 255, 0.1));
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .icon-btn:hover {
+            border-color: rgba(0, 243, 255, 0.6);
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.2), rgba(0, 243, 255, 0.2));
+            box-shadow: 0 4px 20px rgba(0, 243, 255, 0.4);
+            transform: translateY(-2px);
         }
 
         .battery-btn {
             width: auto;
-            padding: 0 .5rem;
+            padding: 0 .8rem;
             display: flex;
             align-items: center;
-            gap: 4px
+            gap: 6px
         }
 
-        .glass {
-            backdrop-filter: blur(2px);
-            background: rgba(0, 0, 0, .12);
-            border: 1px solid rgba(255, 255, 255, .06)
+        .device-row {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 243, 255, 0.15);
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.3s ease;
         }
 
-        .divider {
-            border-color: rgba(255, 255, 255, .12)
+        .device-row:hover {
+            border-color: rgba(0, 243, 255, 0.4);
+            box-shadow: 0 8px 30px rgba(0, 243, 255, 0.2);
+            transform: translateX(4px);
+        }
+
+        .hub-header {
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(5, 8, 22, 0.98) 100%);
+            backdrop-filter: blur(30px);
+            border-bottom: 2px solid rgba(0, 243, 255, 0.3);
+        }
+
+        .modal-3d {
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.98) 0%, rgba(5, 8, 22, 0.99) 100%);
+            backdrop-filter: blur(40px);
+            border: 2px solid rgba(0, 243, 255, 0.3);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        .chart-container-3d {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(10, 14, 39, 0.4) 100%);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 16px;
+            padding: 20px;
         }
     </style>
 </head>
 
 
-<body class="min-h-screen bg-[#4B4F57] text-white">
-    <header class="px-6 py-4 flex items-center justify-between">
-        <h1 class="text-2xl md:text-3xl font-semibold tracking-wide">XR Hub</h1>
-        <!-- 👇 live date/time outside the panel -->
-        <div id="nowStamp" class="text-white/60 text-xs md:text-sm tracking-wide uppercase"></div>
-
+<body class="min-h-screen text-white" style="background: radial-gradient(ellipse at top, #0f1729 0%, #020617 100%);">
+    <header class="hub-header px-6 py-5 flex items-center justify-between sticky top-0 z-50">
+        <h1 class="text-2xl md:text-3xl font-bold tracking-wide hero-title" style="background: linear-gradient(135deg, #00f3ff 0%, #0066ff 50%, #b829ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            XR HUB COMMAND CENTER
+        </h1>
+        <div id="nowStamp" class="neon-text text-xs md:text-sm tracking-wide uppercase flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span></span>
+        </div>
     </header>
 
     <main class="px-6 pb-10">
-        <section class="glass rounded-2xl p-5 md:p-6">
+        <section class="glass-card rounded-2xl p-5 md:p-6 scan-effect">
             <!-- heading row -->
-            <!-- heading row -->
-            <div class="hidden md:grid grid-cols-12 gap-4 pb-3 mb-4 border-b divider">
-                <div class="col-span-2 text-left text-white/80">Providers</div>
+            <div class="hidden md:grid grid-cols-12 gap-4 pb-4 mb-6 border-b" style="border-color: rgba(0, 243, 255, 0.2);">
+                <div class="col-span-2 text-left neon-text text-sm font-semibold uppercase tracking-wider">Providers</div>
                 <div class="col-span-4"></div>
-                <div class="col-span-2 text-center text-white/80">Connection</div>
-                <div class="col-span-4 text-right pr-2 text-white/80">Scribe</div>
+                <div class="col-span-2 text-center neon-text text-sm font-semibold uppercase tracking-wider">Connection</div>
+                <div class="col-span-4 text-right pr-2 neon-text text-sm font-semibold uppercase tracking-wider">Scribe</div>
             </div>
-
 
             <!-- rows container -->
             <div id="rows" class="space-y-4"></div>
@@ -108,30 +147,54 @@
 
 
 
-    <!-- Device Detail Modal -->
-    <div id="detailModal" class="hidden fixed inset-0 z-50 bg-black/60">
-        <div class="mx-auto my-10 max-w-6xl bg-zinc-900 rounded-2xl p-6 shadow-xl">
-            <div class="flex items-center justify-between mb-4">
-                <h2 id="detailTitle" class="text-xl font-semibold text-white">Device Detail</h2>
-                <button id="detailClose"
-                    class="px-3 py-1 rounded bg-zinc-700 hover:bg-zinc-600 text-white">Close</button>
+    <!-- Device Detail Modal with 3D Effect -->
+    <div id="detailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px);">
+        <div class="modal-3d mx-auto max-w-6xl w-full p-8 relative">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="detailTitle" class="text-2xl font-bold neon-text flex items-center gap-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    Device Analytics
+                </h2>
+                <button id="detailClose" class="btn-3d btn-danger-3d">Close</button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-zinc-800 p-4 rounded-xl">
-                    <h3 class="text-white mb-2">Battery %</h3>
+                <div class="chart-container-3d">
+                    <h3 class="text-cyan-400 mb-3 font-semibold text-lg flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Battery %
+                    </h3>
                     <canvas id="batteryChart" height="120"></canvas>
                 </div>
-                <div class="bg-zinc-800 p-4 rounded-xl">
-                    <h3 class="text-white mb-2">Network Throughput (Mbps)</h3>
+                <div class="chart-container-3d">
+                    <h3 class="text-cyan-400 mb-3 font-semibold text-lg flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+                        </svg>
+                        Network Throughput (Mbps)
+                    </h3>
                     <canvas id="netChart" height="120"></canvas>
                 </div>
-                <div class="bg-zinc-800 p-4 rounded-xl">
-                    <h3 class="text-white mb-2">A/V Bitrate (kbps)</h3>
+                <div class="chart-container-3d">
+                    <h3 class="text-cyan-400 mb-3 font-semibold text-lg flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        A/V Bitrate (kbps)
+                    </h3>
                     <canvas id="bitrateChart" height="120"></canvas>
                 </div>
-                <div class="bg-zinc-800 p-4 rounded-xl">
-                    <h3 class="text-white mb-2">Jitter / RTT / Loss</h3>
+                <div class="chart-container-3d">
+                    <h3 class="text-cyan-400 mb-3 font-semibold text-lg flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        Jitter / RTT / Loss
+                    </h3>
                     <canvas id="qualityChart" height="120"></canvas>
                 </div>
             </div>

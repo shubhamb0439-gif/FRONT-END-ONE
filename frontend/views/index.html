@@ -5,106 +5,201 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <title>XR Messaging Web App</title>
+    <title>XR Vision Dock - Next Generation Interface</title>
 
-    <!-- App favicon -->
     <link rel="icon" type="image/png" sizes="512x512" href="/public/images/xr-logo.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/public/images/xr-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#4f46e5',
-                        urgent: '#dc2626',
-                        overlay: 'rgba(0, 0, 0, 0.7)',
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="/public/css/3d-framework.css">
     <link rel="stylesheet" href="/public/css/styles.css">
+    <style>
+        body {
+            background: radial-gradient(ellipse at top, #0f1729 0%, #020617 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .hero-title {
+            font-size: clamp(24px, 5vw, 42px);
+            background: linear-gradient(135deg, #00f3ff 0%, #0066ff 50%, #b829ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .video-container-3d {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.3s ease;
+        }
+
+        .video-container-3d:hover {
+            transform: translateZ(20px) scale(1.02);
+        }
+
+        #xrVideo {
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 243, 255, 0.3);
+            border: 2px solid rgba(0, 243, 255, 0.2);
+        }
+
+        .message-item {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .message-item:hover {
+            border-color: rgba(0, 243, 255, 0.5);
+            box-shadow: 0 4px 20px rgba(0, 243, 255, 0.2);
+            transform: translateX(4px);
+        }
+
+        .control-panel {
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.95) 0%, rgba(5, 8, 22, 0.98) 100%);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(0, 243, 255, 0.2);
+        }
+    </style>
 </head>
 
-<body class="bg-gradient-to-br from-gray-900 to-gray-800 text-white font-sans h-screen overflow-hidden">
-    <div class="flex flex-col h-full">
+<body class="text-white font-sans h-screen overflow-hidden">
+    <div class="flex flex-col h-full relative z-10">
 
-        <!-- Top Bar -->
-        <div class="flex justify-between items-center px-4 md:px-6 py-3 md:py-4 bg-gray-900 shadow-md z-10">
-            <h1 class="text-xl md:text-2xl font-bold text-white">XR Vision Dock</h1>
+        <!-- Top Bar with 3D Effect -->
+        <div class="glass-card flex justify-between items-center px-4 md:px-6 py-4 md:py-5 border-b border-cyan-500/20 relative z-20"
+             style="border-radius: 0; backdrop-filter: blur(30px); background: linear-gradient(135deg, rgba(10, 14, 39, 0.9) 0%, rgba(5, 8, 22, 0.95) 100%);">
+            <h1 class="hero-title">XR VISION DOCK</h1>
             <div class="flex gap-4 items-center">
-                <span id="status"
-                    class="px-3 py-1 rounded-full text-white bg-yellow-500 text-xs md:text-base">Connecting</span>
-                <div id="dockBatteryLabel" class="text-xs md:text-sm text-gray-300">🔋 Battery: --%</div>
+                <span id="status" class="status-badge status-connecting text-xs md:text-sm">Connecting</span>
+                <div id="dockBatteryLabel" class="neon-text text-xs md:text-sm flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="6" width="18" height="12" rx="2" ry="2"/>
+                        <line x1="23" y1="13" x2="23" y2="11"/>
+                    </svg>
+                    <span>Battery: --%</span>
+                </div>
             </div>
         </div>
 
         <!-- Main Body Responsive -->
         <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-            <!-- Video Stream Top/Left -->
-            <div class="relative w-full md:w-2/3 h-56 md:h-auto bg-black flex-shrink-0">
-                <video id="xrVideo" class="w-full h-full object-cover" autoplay playsinline muted></video>
+            <!-- Video Stream Top/Left with 3D Effect -->
+            <div class="relative w-full md:w-2/3 h-56 md:h-auto bg-black flex-shrink-0 video-container-3d p-4">
+                <div class="hologram-effect h-full rounded-2xl overflow-hidden relative">
+                    <video id="xrVideo" class="w-full h-full object-cover" autoplay playsinline muted></video>
 
-                <!-- Overlays -->
-                <div id="videoOverlay"
-                    class="absolute inset-0 bg-overlay text-white flex items-center justify-center text-lg md:text-2xl font-bold hidden">
-                    Video Hidden for Privacy
-                </div>
-                <div id="muteBadge"
-                    class="absolute top-3 right-3 bg-red-600 text-white px-3 py-1 text-xs md:text-sm rounded hidden">🔇
-                    Muted
+                    <!-- Overlays with Enhanced Design -->
+                    <div id="videoOverlay"
+                        class="absolute inset-0 flex items-center justify-center text-lg md:text-2xl font-bold hidden"
+                        style="background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(10, 14, 39, 0.95) 100%); backdrop-filter: blur(20px);">
+                        <div class="text-center">
+                            <div class="neon-text mb-4">
+                                <svg class="w-16 h-16 mx-auto mb-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </div>
+                            <div>Video Hidden for Privacy</div>
+                        </div>
+                    </div>
+                    <div id="muteBadge"
+                        class="absolute top-4 right-4 px-4 py-2 text-xs md:text-sm rounded-lg hidden flex items-center gap-2"
+                        style="background: linear-gradient(135deg, #dc2626 0%, #ff006e 100%); box-shadow: 0 4px 20px rgba(255, 0, 110, 0.6);">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>Muted</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Side Panel Bottom/Right -->
-            <div
-                class="w-full md:w-1/3 bg-gray-950 bg-opacity-90 text-xs md:text-sm overflow-y-auto px-3 md:px-4 py-2 md:py-3 space-y-4 md:space-y-6 max-h-[40vh] md:max-h-full">
-                <!-- Devices -->
-                <div>
-                    <h3 class="text-base font-semibold mb-2">Connected Devices</h3>
-                    <ul id="deviceList" class="list-disc pl-5 text-gray-300"></ul>
+            <!-- Side Panel with Glass Effect -->
+            <div class="w-full md:w-1/3 tech-panel text-xs md:text-sm overflow-y-auto px-3 md:px-4 py-4 md:py-6 space-y-6 max-h-[40vh] md:max-h-full"
+                 style="border-radius: 0; border-left: 1px solid rgba(0, 243, 255, 0.2);">
+                <!-- Devices Section -->
+                <div class="glass-card p-4">
+                    <h3 class="text-base font-semibold mb-3 neon-text flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        Connected Devices
+                    </h3>
+                    <ul id="deviceList" class="space-y-2 text-gray-300"></ul>
                 </div>
-                <!-- Recent Messages -->
-                <div>
-                    <h3 class="text-base font-semibold mb-2">Recent Messages</h3>
-                    <div id="recentMessages" class="space-y-2 max-h-20 md:max-h-32 overflow-y-auto"></div>
+
+                <!-- Recent Messages Section -->
+                <div class="glass-card p-4 scan-effect">
+                    <h3 class="text-base font-semibold mb-3 neon-text flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                        </svg>
+                        Recent Messages
+                    </h3>
+                    <div id="recentMessages" class="space-y-2 max-h-20 md:max-h-32 overflow-y-auto custom-scrollbar"></div>
                 </div>
-                <!-- Message History -->
-                <div>
-                    <h3 class="text-base font-semibold mb-2">Message History</h3>
-                    <div id="messageHistory" class="space-y-2 max-h-24 md:max-h-48 overflow-y-auto"></div>
+
+                <!-- Message History Section -->
+                <div class="glass-card p-4">
+                    <h3 class="text-base font-semibold mb-3 neon-text flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Message History
+                    </h3>
+                    <div id="messageHistory" class="space-y-2 max-h-24 md:max-h-48 overflow-y-auto custom-scrollbar"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Controls Footer -->
-        <div class="px-3 md:px-6 py-3 md:py-4 bg-gray-800 flex flex-col gap-2 shadow-inner z-10">
-            <div class="flex flex-col md:flex-row gap-2 md:gap-4">
+        <!-- Controls Footer with 3D Design -->
+        <div class="control-panel px-3 md:px-6 py-4 md:py-5 flex flex-col gap-3 z-20 relative">
+            <div class="flex flex-col md:flex-row gap-3 md:gap-4">
                 <input type="text" id="usernameInput" placeholder="Your Name"
-                    class="flex-1 px-3 py-2 rounded bg-gray-900 border border-gray-700 placeholder-gray-500 text-white" />
-                <input type="text" id="xrIdInput" placeholder="Enter the ID"
-                    class="flex-1 px-3 py-2 rounded bg-gray-900 border border-gray-700 placeholder-gray-500 text-white" />
+                    class="input-3d flex-1" />
+                <input type="text" id="xrIdInput" placeholder="Enter XR Device ID"
+                    class="input-3d flex-1" />
             </div>
-            <textarea id="messageInput" placeholder="Type a message..."
-                class="w-full h-20 md:h-24 p-3 rounded bg-gray-900 border border-gray-700 placeholder-gray-500 text-white resize-none mt-2"></textarea>
-            <div class="flex flex-col md:flex-row justify-between items-center mt-1 gap-2 md:gap-0">
-                <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="urgentCheckbox" class="accent-urgent" />
-                    <span>Mark as Urgent</span>
+            <textarea id="messageInput" placeholder="Type your message here..."
+                class="input-3d w-full h-20 md:h-24 resize-none"></textarea>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+                <label class="flex items-center space-x-3 cursor-pointer group">
+                    <div class="relative">
+                        <input type="checkbox" id="urgentCheckbox" class="sr-only peer" />
+                        <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-gradient-to-r peer-checked:from-red-500 peer-checked:to-pink-500 transition-all duration-300 peer-checked:shadow-[0_0_20px_rgba(255,0,110,0.6)]"></div>
+                        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5"></div>
+                    </div>
+                    <span class="text-sm font-medium group-hover:text-cyan-400 transition-colors">Mark as Urgent</span>
                 </label>
-                <div class="flex gap-2 md:gap-3 w-full md:w-auto">
+                <div class="flex gap-3 w-full md:w-auto flex-wrap md:flex-nowrap">
                     <button id="openScribeBtn"
-                        class="whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm px-3 py-2 rounded-md border border-indigo-500/40 transition"
+                        class="btn-3d btn-primary-3d flex items-center gap-2 whitespace-nowrap text-xs md:text-sm"
                         title="Open Scribe Cockpit">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
                         Scribe Cockpit
                     </button>
                     <button id="sendButton"
-                        class="flex-1 md:flex-none bg-primary hover:bg-indigo-700 text-white px-4 md:px-6 py-2 rounded">Send</button>
+                        class="btn-3d btn-success-3d flex-1 md:flex-none flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        Send
+                    </button>
                     <button id="clearMessagesBtn"
-                        class="flex-1 md:flex-none bg-red-600 hover:bg-red-800 text-white px-4 md:px-6 py-2 rounded">Clear
-                        Messages</button>
-
+                        class="btn-3d btn-danger-3d flex-1 md:flex-none flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        Clear
+                    </button>
                 </div>
             </div>
         </div>
